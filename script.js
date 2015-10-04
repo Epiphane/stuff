@@ -6,15 +6,21 @@ var Slack = require('slack-client');
 
 var args = process.argv.slice(2);
 
-var dateStr = moment().subtract(1, 'days').format('YYYY-MM-DD');
+var dateStr = moment().subtract(0, 'days').format('YYYY-MM-DD');
 
-var getContribs = function(user) {
+var getContribs = function(user, message) {
 	var xray = new Xray();
 	var url = 'https://github.com/' + user + '?tab=contributions&from=' + dateStr;
 	console.log('url', url);
 	xray(url, '.text-emphasized')
 	(function(error, results) {
 		console.log('contribs', results);
+		if (results) {
+			var numCommitsToday = parseInt(results);
+			var channel = slack.getChannelGroupOrDMByID(message.channel);
+			var str = user + ' made ' + results + ' contributions today';
+			channel.send(str);
+		}
 	})
 }
 
@@ -55,7 +61,8 @@ slack.on('message', function(message) {
 	var body = message.getBody();
 	if (body.match('<@' + slack.self.id + '>:*.*contest.*')) {
 		var str = githubHandles.forEach(function(name) {
-			getStreak(name, message); 
+			getStreak(name, message);
+			getContribs(name, message);
 		})
 	}
 });
