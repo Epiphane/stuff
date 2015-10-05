@@ -116,14 +116,23 @@ slack.on('open', function() {
 
 slack.on('message', function(message) {
 	var body = message.getBody();
+	var channel = slack.getChannelGroupOrDMByID(message.channel);
 	if (body.match('<@' + slack.self.id + '>:*.*contest.*')) {
-		var channel = slack.getChannelGroupOrDMByID(message.channel);
 		getContestData().then(function(str) {
 			channel.send(str)
 		}, function onError(reason) {
 			channel.send('fail whale...');
 			channel.send(reason);
 		});
+	}
+	else if (body.match('<@' + slack.self.id + '>:*.*help.*')) {
+		var strs = [
+			'Here are my commands:',
+			'   contest – get update on commit streak',
+			'commands comming soon:',
+			'	punch, kick, knee, show moves'
+		];
+		channel.send(strs.join('\n'));
 	}
 });
 
