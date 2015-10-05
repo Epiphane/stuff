@@ -1,4 +1,4 @@
-var Xray = require('x-ray');
+var _Xray = require('x-ray');
 var fs = require('fs');
 var Download = require('download');
 var moment = require('moment');
@@ -6,112 +6,104 @@ var Slack = require('slack-client');
 
 var args = process.argv.slice(2);
 
-var dateStr = moment().subtract(0, 'days').format('YYYY-MM-DD');
-
-var xray = function(url, selector, format) {
+var xray = function(url, selector, format) {	// prefer promise-based async
 	return new Promise(function(resolve, reject) {
-		new Xray()(url, selector, format)
-	})
-}
-
-var getContribs = function(user, message) {
-	return new Promise(function(resolve, reject) {
-		var xray = new Xray();
-		var url = 'https://github.com/' + user + '?tab=contributions&from=' + dateStr;
-		console.log('url', url);
-		xray(url, '.text-emphasized')
-		(function(error, results) {
-			console.log('contribs', results);
-			if (results) {
-				var numCommitsToday = parseInt(results);
-				// var channel = slack.getChannelGroupOrDMByID(message.channel);
-				var str = user + ' made ' + results + ' contributions today';
-				// channel.send(str);
-				resolve(str);
+		new _Xray()(url, selector, format)(function(error, results) {
+			if (error) {
+				reject(error);
 			}
-			resolve(null);
-		})
+			resolve(results);
+		});
 	});
 }
 
-var getStreak = function(user, message) {
+var scrapeContribCount = function(githubHandle) {
 	return new Promise(function(resolve, reject) {
-		var xray = new Xray();
-		xray('https://github.com/' + user, '.contrib-column', [{
+		var dateStr = moment().format('YYYY-MM-DD');
+		var url = 'https://github.com/' + githubHandle + '?tab=contributions&from=' + dateStr;
+		xray(url, '.text-emphasized').then(function(results) {
+			if (results) {
+				var str = githubHandle + ' made ' + results + ' contributions today'
+				resolve(str);
+			}
+			resolve(null);
+		});
+	});
+}
+
+var scrapeSteak = function(githubHandle) {
+	return new Promise(function(resolve, reject) {
+		var url = 'https://github.com/' + githubHandle;
+		var format = [{
 			desc: '.text-muted',
 			val: '.contrib-number'
-		}])
-		(function(error, results) {
-			// console.log('results', results);
+		}];
+		xray(url, '.contrib-column', format).then(function(results) {
 			var desiredThing = results.find(function(thing) {
 				return thing.desc == "Current streak";
 			});
 			if (desiredThing) {
-				// var channel = slack.getChannelGroupOrDMByID(message.channel);
-				var str = desiredThing.desc + ' for ' + user + ': ' + desiredThing.val;
-				// channel.send(str);
-				resolve(str);
+				resolve(desiredThing.desc + ' for ' + githubHandle + ': ' + desiredThing.val);
 			} else {
-				reject('fail whale');
+				reject('couldn\'t find streak');
 			}
-		})
-	});
-}
-
-var githubHandles = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
-
-var getData = function() {
-	return new Promise(function(resolve, reject) {
-		var streaks = {};
-		var contribs = {};
-
-		var promises = githubHandles.map(function(person) {
-			return new Promise(function(resolve, reject) {
-					getStreak(person).then(function(result) {
-					streaks[person] = result;
-					resolve();
-				});
-			});
 		});
-
-		promises = promises.concat(githubHandles.map(function(person) {
-			return new Promise(function(resolve, reject) {
-					getContribs(person).then(function(result) {
-					contribs[person] = result;
-					resolve();
-				});
-			});
-		}));
-
-		console.log('Promise', Promise);
-
-		Promise.all(promises).then(function() {
-			var strs = [];
-
-
-
-			githubHandles.forEach(function(person) {
-				if (streaks[person]) {
-					strs.push(streaks[person]);
-				}
-			});
-
-			githubHandles.forEach(function(person) {
-				if (contribs[person]) {
-					strs.push(contribs[person]);
-				}
-			});
-
-			resolve(strs.join("\n"));
-		}, function(reason) {
-			console.log('reason', reason);
-		})
 	});
 }
 
-console.log('data', getData().then(function(shit) {
-	console.log('shit', shit);
-}));
+var getContestData = function() {
+	return new Promise(function(resolve, reject) {
+		var participants = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
+
+		var contribCountStrs = [];
+		var streakStrs = [];
+		var completedPromises = 0;
+		var erroredContribCounts = [];
+		var erroredStreaks = [];
+
+		function buildStr() {
+			var errorStrs = [];
+			if (erroredStreaks.length) {
+				errorStrs.push('could not scrape streaks for: ' + erroredStreaks.join('\''));
+			}
+			if (erroredContribCounts.length) {
+				errorStrs.push('could not today\'s contributions  for: ' + erroredContribCounts.join('\''));
+			}
+
+			var strs = streakStrs.concat(contribCountStrs, errorStrs).filter(function(str) {
+				return str;
+			});
+			return strs.join('\n');
+		}
+
+		function onCompletePromise() {
+			completedPromises++;
+			if (completedPromises === participants.length * 2) {
+				resolve(buildStr());
+			}
+		}
+
+		for (var idx in participants) {
+			(function(idx) {
+				var person = participants[idx];
+				scrapeContribCount(person).then(function(data) {
+					contribCountStrs[idx] = data;
+					onCompletePromise();
+				}, function onError() {
+					erroredContribCounts.push(person);
+					onCompletePromise();
+				});
+				scrapeSteak(person).then(function(data) {
+					streakStrs[idx] = data;
+					onCompletePromise();
+				}, function onError() {
+					erroredStreaks.push(person);
+					onCompletePromise();
+				});
+			})(idx);
+		}
+	});
+}
 
 var movebook = JSON.parse(fs.readFileSync('./ignoreme/.movebook', 'utf8'));
 
@@ -126,7 +118,7 @@ slack.on('message', function(message) {
 	var body = message.getBody();
 	if (body.match('<@' + slack.self.id + '>:*.*contest.*')) {
 		var channel = slack.getChannelGroupOrDMByID(message.channel);
-		getData().then(function(str) {
+		getContestData().then(function(str) {
 			channel.send(str)
 		}, function onError(reason) {
 			channel.send('fail whale...');
