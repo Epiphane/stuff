@@ -19,6 +19,7 @@
   "devDependencies": {
     "download": "^4.2.1",
     "fs": "0.0.2",
+    "gm": "^1.20.0",
     "moment": "^2.10.6",
     "slack-client": "^1.4.1",
     "x-ray": "^2.0.2"
