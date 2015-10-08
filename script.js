@@ -134,6 +134,10 @@ slack.on('message', function(message) {
 		];
 		channel.send(strs.join('\n'));
 	}
+	else if (body.match('<@' + slack.self.id + '>:*.*experiment0.*')) {
+		console.log('breakpoint');
+		debugger;
+	}
 });
 
 slack.login();
