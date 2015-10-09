@@ -20,21 +20,23 @@ var user = args[0];
 var download = function() {
 	return new Promise(function(resolve, reject) {
 		octo.users(user).fetch().then(function(obj) {
-			NetworkSrvc.sendGet('api.github.com', '/users/' + user).then(function(obj) {
-				var pictureUrl = obj.avatar_url;
-				var file = fs.createWriteStream("file.jpg");
-				var request = https.get(pictureUrl, function(response) {
-					response.pipe(file);
-					file.on('finish', function() {
-						file.close(function() {
-							resolve();
-						});
+			var pictureUrl = obj.avatarUrl;
+			var file = fs.createWriteStream("file.jpg");
+			console.log('pictureUrl', pictureUrl);
+			var request = https.get(pictureUrl, function(response) {
+				response.pipe(file);
+				file.on('finish', function() {
+					file.close(function() {
+						resolve();
 					});
 				});
-			}, function onError(e) {
-				console.log('could not fetch user data for ' + user, e);
-				reject(e);
+			}).on('error', function(error) {
+				console.log('could not fetch avatar', error);
+				reject(error);
 			});
+		}, function onError(e) {
+			console.log('could not fetch user data for ' + user, e);
+			reject(e);
 		});
 	});
 }
