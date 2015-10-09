@@ -7,7 +7,6 @@ var https = require('https');
 class NetworkSrvc {
 	sendGet(hostname: string, path : string, params = {}, debug = false) {
 		return new Promise(function(resolve, reject) {
-			console.log('todo: send get request');
 			https.get({
 				hostname: hostname,
 				path: path,
