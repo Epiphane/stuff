@@ -62,27 +62,29 @@ var metadata = {
 	}
 }
 
-console.log(metadata.overlayLocs[12]);
+console.log('metadata', JSON.stringify(metadata));
 
-var startFrame = metadata.startingFrameNum;
-var endFrame = metadata.endingFrameNum;
+// console.log(metadata.overlayLocs[12]);
 
-for (var i = startFrame; i <= endFrame; i++) {
-	var fileName = 'frame' + (i < 10 ? '0' : '') + i + '.gif';
+// var startFrame = metadata.startingFrameNum;
+// var endFrame = metadata.endingFrameNum;
 
-	if (metadata.overlayLocs[i]) {
-		x = metadata.overlayLocs[i][0];
-		y = metadata.overlayLocs[i][1];
-		x -= metadata.width/2;
-		y -= metadata.height/2;
-		gm()
-			.in('-page', '+0+0')
-			.in('shit/' + fileName)
-			.in('-page', '+' + x + '+' + y) // location of smallIcon.jpg is x,y -> 10, 20
-			.in('seattle.jpeg')
-			.mosaic()
-			.write('outshit/' + fileName, function (err) {
-		    	if (err) console.log(err);
-		});
-	}
-}
+// for (var i = startFrame; i <= endFrame; i++) {
+// 	var fileName = 'frame' + (i < 10 ? '0' : '') + i + '.gif';
+
+// 	if (metadata.overlayLocs[i]) {
+// 		x = metadata.overlayLocs[i][0];
+// 		y = metadata.overlayLocs[i][1];
+// 		x -= metadata.width/2;
+// 		y -= metadata.height/2;
+// 		gm()
+// 			.in('-page', '+0+0')
+// 			.in('shit/' + fileName)
+// 			.in('-page', '+' + x + '+' + y) // location of smallIcon.jpg is x,y -> 10, 20
+// 			.in('seattle.jpeg')
+// 			.mosaic()
+// 			.write('outshit/' + fileName, function (err) {
+// 		    	if (err) console.log(err);
+// 		});
+// 	}
+// }
