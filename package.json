@@ -24,6 +24,7 @@
     "https": "^1.0.0",
     "moment": "^2.10.6",
     "slack-client": "^1.4.1",
+    "typescript": "^1.6.2",
     "x-ray": "^2.0.2"
   }
 }
