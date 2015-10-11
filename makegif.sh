@@ -1,22 +1,18 @@
 #!/bin/bash
 
-user="$1" 		#user is github handle of victim
+user="$1"
 echo "$user"
 
-gm convert giphy.gif +adjoin "frames/%02d.gif" #split gif
+gm convert giphy.gif +adjoin "frames/%02d.gif"
 
-userData=$(curl --dump-header headers.txt "https://api.github.com/users/$user") # get user avatar
+userData=$(curl --dump-header headers.txt "https://api.github.com/users/$user")
 avatar_url=$(echo $userData | jq ".avatar_url?")
 echo "avatar_url: $avatar_url"
 curl -k "$avatar_url" > avatar.jpg
 echo $avatar_url | xargs -n 1 curl -0 > avatar.jpg
 
-
 metadata=$(cat giphy_metadata.json)
 echo $(echo metadata | jq ".overlayLocs?[5]")
-
-# overlayLocs=$(echo metadata | jq ".overlayLocs?")
-# echo "overlayLocs: $overlayLocs"
 
 startFrame=$(cat giphy_metadata.json | jq '.startingFrameNum')
 endFrame=$(cat giphy_metadata.json | jq '.endingFrameNum')
@@ -28,7 +24,6 @@ echo "endFrame: $endFrame"
 echo "width: $width"
 echo "height: $height"
 
-#gm convert avatar.jpg -resize 40x40 avatar_resized.jpg
 gm convert avatar.jpg -resize "$widthx$height" avatar_resized.jpg
 
 for i in `seq $startFrame $endFrame`;
@@ -50,7 +45,6 @@ do
 		y=$(expr $y - $(expr $height / 2))
 		echo "adjusted - x: $x, y: $y"
 
-		#gm convert -page +0+0 frames/00.gif -page +100+100 avatar_resized.jpg -mosaic mosaic.gif
 		gm convert -page +0+0 "frames/$number.gif" -page "+$x+$y" avatar_resized.jpg -mosaic $outFile
 	fi
 
