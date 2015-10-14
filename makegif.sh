@@ -17,10 +17,10 @@ splitGif &
 
 metadata=$(cat giphy_metadata.json)
 
-startFrame=$(cat giphy_metadata.json | jq '.startingFrameNum')
-endFrame=$(cat giphy_metadata.json | jq '.endingFrameNum')
-width=$(cat giphy_metadata.json | jq '.width')
-height=$(cat giphy_metadata.json | jq '.height')
+startFrame=$(echo "$metadata" | jq '.startingFrameNum')
+endFrame=$(echo "$metadata" | jq '.endingFrameNum')
+width=$(echo "$metadata" | jq '.width')
+height=$(echo "$metadata" | jq '.height')
 
 wait
 
