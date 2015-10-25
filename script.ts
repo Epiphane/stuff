@@ -1,3 +1,7 @@
+declare var require: (moduleId: string) => any;
+declare var process: any;
+declare var Promise: any;
+
 var _Xray = require('x-ray');
 var fs = require('fs');
 var Download = require('download');
@@ -8,11 +12,11 @@ var fs = require('fs');
 
 // var punchSomeone = require('./diverge.js').punch;
 
-var args = process.argv.slice(2);
+var args:Array<string> = process.argv.slice(2);
 
 
 
-var xray = function(url, selector, format) { // prefer promise-based async
+var xray = function(url:string, selector:string, format = undefined) { // prefer promise-based async
    return new Promise(function(resolve, reject) {
       new _Xray()(url, selector, format)(function(error, results) {
          if (error) {
@@ -23,13 +27,13 @@ var xray = function(url, selector, format) { // prefer promise-based async
    });
 }
 
-var scrapeContribCount = function(githubHandle) {
+var scrapeContribCount = function(githubHandle:string) {
    return new Promise(function(resolve, reject) {
-      var dateStr = moment().format('YYYY-MM-DD');
-      var url = 'https://github.com/' + githubHandle + '?tab=contributions&from=' + dateStr;
+      var dateStr:string = moment().format('YYYY-MM-DD');
+      var url:string = 'https://github.com/' + githubHandle + '?tab=contributions&from=' + dateStr;
       xray(url, '.text-emphasized').then(function(results) {
          if (results) {
-            var str = githubHandle + ' made ' + results + ' contributions today'
+            var str:string = githubHandle + ' made ' + results + ' contributions today'
             resolve(str);
          }
          resolve(null);
@@ -37,9 +41,9 @@ var scrapeContribCount = function(githubHandle) {
    });
 }
 
-var scrapeSteak = function(githubHandle) {
+var scrapeSteak = function(githubHandle:string) {
    return new Promise(function(resolve, reject) {
-      var url = 'https://github.com/' + githubHandle;
+      var url:string = 'https://github.com/' + githubHandle;
       var format = [{
          desc: '.text-muted',
          val: '.contrib-number'
@@ -59,11 +63,11 @@ var scrapeSteak = function(githubHandle) {
 
 var getContestData = function() {
    return new Promise(function(resolve, reject) {
-      var participants = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
+      var participants:Array<string> = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
 
-      var contribCountStrs = [];
-      var streakStrs = [];
-      var completedPromises = 0;
+      var contribCountStrs:Array<string> = [];
+      var streakStrs:Array<string> = [];
+      var completedPromises:number = 0;
       var erroredContribCounts = [];
       var erroredStreaks = [];
 
@@ -76,8 +80,8 @@ var getContestData = function() {
             errorStrs.push('could not today\'s contributions  for: ' + erroredContribCounts.join('\''));
          }
 
-         var strs = streakStrs.concat(contribCountStrs, errorStrs).filter(function(str) {
-            return str;
+         var strs:Array<string> = streakStrs.concat(contribCountStrs, errorStrs).filter(function(str) {
+            return !!str;
          });
          return strs.join('\n');
       }
@@ -91,7 +95,7 @@ var getContestData = function() {
 
       for (var idx in participants) {
          (function(idx) {
-            var person = participants[idx];
+            var person:string = participants[idx];
             scrapeContribCount(person).then(function(data) {
                contribCountStrs[idx] = data;
                onCompletePromise();
@@ -111,7 +115,7 @@ var getContestData = function() {
    });
 }
 
-var splitGif = function(fileName, outFolder) {
+var splitGif = function(fileName:string, outFolder:string) {
    return new Promise(function(resolve, reject) {
       gm(fileName)
          .in('+adjoin')
