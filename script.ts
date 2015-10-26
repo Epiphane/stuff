@@ -10,8 +10,6 @@ var Slack = require('slack-client');
 var gm = require('gm');
 var fs = require('fs');
 
-// var punchSomeone = require('./diverge.js').punch;
-
 var args:Array<string> = process.argv.slice(2);
 
 
@@ -152,74 +150,6 @@ function copyFile(source, target) {
    });
 }
 
-var punchSomeone = function(user) {
-   return new Promise(function(resolve, reject) {
-      splitGif('giphy.gif', folder).then(function() {
-         console.log('hi');
-         var gif = 'giphy';
-         var metadata = require('./' + gif + '_metadata.json');
-
-         var startFrame = metadata.startingFrameNum;
-         var endFrame = metadata.endingFrameNum;
-         var x;
-         var y;
-
-         for (var i = startFrame; i <= endFrame; i++) {
-            var fileName = '' + (i < 10 ? '0' : '') + i + '.gif';
-
-            var inFile = folder + '/' + fileName;
-            var outFile = folder + '_out/' + fileName;
-
-            if (metadata.overlayLocs[i]) {
-               x = metadata.overlayLocs[i][0];
-               y = metadata.overlayLocs[i][1];
-               x -= metadata.width/2;
-               y -= metadata.height/2;
-               gm()
-                  .in('-page', '+0+0')
-                  .in(inFile)
-                  .in('-page', '+' + x + '+' + y)
-                  .in('avatar_resized.jpg')
-                  .mosaic()
-                  .write(outFile, function (err) {
-                     if (err) console.log(err);
-                     else {
-                     }
-               });
-            }
-            else {
-               copyFile(inFile, outFile).then(function() {
-
-               }, function onError(err) {
-                  console.log('could not copy file', err);
-               });
-            }
-         }
-
-         setTimeout(function() {
-            gm(folder + '_out/*.gif')
-               .in('-delay', '10')
-               .stream(function(err, stdout, stderr) {
-                  if (err) {
-                     console.log('fuck', err);
-                  }
-                  var writeStream = fs.createWriteStream('animation.gif');
-                  var arst = stdout.pipe(writeStream);
-                  arst.on('finish', function() {
-                     arst.close(function() {
-                        //resolve();
-                        resolve();
-                     });
-                  });
-               });
-         }, 3000);   // TODO: this might be jank
-         
-      }, function onError(err) {
-         console.log('couldn\'t split gif', err);
-      });
-   });
-}
-
 var movebook = JSON.parse(fs.readFileSync('./ignoreme/.movebook', 'utf8'));
 
 var slackToken = movebook.token;
@@ -251,17 +181,10 @@ slack.on('message', function(message) {
    }
    else if (body.match('<@' + slack.self.id + '>:* *experiment0 *punch *')) {
       var name = body.split("punch")[1].trim();
-      punchSomeone(name).then(function() {
-
-      });
       console.log('breakpoint');
       debugger;
    }
 });
-
-punchSomeone('zarend').then(function() {
-         debugger;
-      });
 
 slack.login();
 
