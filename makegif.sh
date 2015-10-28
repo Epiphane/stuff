@@ -3,7 +3,7 @@
 user="$1"
 
 splitGif() {
-	gm convert giphy.gif +adjoin "frames/%02d.gif"
+	gm convert "assets/gif/giphy.gif" +adjoin "$1/%02d.gif"
 }
 
 fetchAvatar() {
@@ -13,9 +13,10 @@ fetchAvatar() {
 }
 
 fetchAvatar &
-splitGif &
+mkdir frames
+splitGif "frames" &
 
-metadata=$(cat giphy_metadata.json)
+metadata=$(cat assets/gif/giphy_metadata.json)
 
 startFrame=$(echo "$metadata" | jq '.startingFrameNum')
 endFrame=$(echo "$metadata" | jq '.endingFrameNum')
@@ -47,6 +48,8 @@ doFrame() {
 		gm convert -page +0+0 "frames/$number.gif" -page "+$x+$y" avatar_resized.jpg -mosaic $outFile
 	fi
 }
+
+mkdir frames_out
 
 for i in `seq $startFrame $endFrame`;
 do
