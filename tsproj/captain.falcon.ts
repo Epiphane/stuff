@@ -1,11 +1,17 @@
+
 declare var require: (moduleId: string) => any;
 declare var process: any;
 declare var Promise: any;
+
+var exec = require('child_process').exec,
+   child;
 
 var fs = require('fs');
 var Slack = require('slack-client');
 
 var xraySrvc:any = require('./xraySrvc.js');
+var slackMsgSrvc: any = require('./slackMsgSrvc.js');
+var s3Class: any = require('./s3Class.js');
 
 var args:Array<string> = process.argv.slice(2);
 
@@ -63,10 +69,58 @@ function copyFile(source, target) {
    });
 }
 
+let falconPunch = function(user, channel) {
+   user = 'U' + user;
+   let picUrl = slack.users[user] && slack.users[user].profile.image_32;
+   console.log('user', user);
+   console.log('picUrl', picUrl);
+   if (picUrl) {
+      exec(`./makegif.sh \'${picUrl}\'`, (error, stdout, stderr) => {
+         console.log('stdout: ' + stdout);
+         console.log('stderr: ' + stderr);
+         if (error !== null) {
+            console.log('exec error: ' + error);
+         } else {
+            let temp = stdout.trim();
+            let path = `${temp}/better.gif`;
+            let key = `${slack.team.id}_${user}.gif`;
+            let bucket = s3.GIF_BUCKET;
+            let url = `https://s3-us-west-2.amazonaws.com/${bucket}/${key}`;
+            console.log('url', url);
+
+            console.log('path', path);
+            console.log('key', key);
+
+            s3.uploadFile(path, key).then((data) => {
+               console.log('data', data);
+               let message = {
+                  text: 'Falcon... punch!',
+                  attachments: [
+                     {
+                        "fallback": "this is a fallback",
+                        "pretext": "this is pretext",
+                        "title": "this is the title",
+                        "image_url": url,
+                        "text": "this is the text",
+                        "color": "#FF0000"
+                     }
+                  ]
+               };
+               channel.postMessage(message);
+            }, (err) => {
+               console.log('upload file died', err);
+            });
+         }
+      });
+   }
+}
+
 var movebook = JSON.parse(fs.readFileSync('../ignoreme/.movebook', 'utf8'));
 
 var slackToken = movebook.token;
 var slack = new Slack(slackToken, true, true);
+
+var s3 = new s3Class();
 
 slack.on('open', function() {
    console.log('connected to ' + slack.team.name + ' as @' + slack.self.name);
@@ -84,8 +138,7 @@ slack.on('message', function(message) {
          channel.send('fail whale...');
          channel.send(reason);
       });
-   }
-   else if (body.match('<@' + slack.self.id + '>:*.*help.*')) {
+   } else if (body.match('<@' + slack.self.id + '>:*.*help.*')) {
       var strs = [
          'Here are my commands:',
          '   contest – get update on commit streak',
@@ -93,11 +146,16 @@ slack.on('message', function(message) {
          '  punch, kick, knee, show moves'
       ];
       channel.send(strs.join('\n'));
-   }
-   else if (body.match('<@' + slack.self.id + '>:* *experiment0 *punch *')) {
-      var name = body.split("punch")[1].trim();
-      console.log('breakpoint');
-      debugger;
+   } else if (body.match('<@' + slack.self.id + '.*>:*.*punch.*')) {
+      let ppl = slackMsgSrvc.findMentions(body).filter((person) => {
+         return 'U' + person !== slack.self.id;
+      });
+
+      ppl.forEach((person) => {
+         falconPunch(person, channel);
+      });
+   } else {
+      console.log(message);
    }
 });
 
