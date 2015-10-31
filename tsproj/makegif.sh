@@ -1,6 +1,6 @@
 #!/bin/bash
 
-slackAvatarUrl="$1"
+option="$1"
 
 temp=$(mktemp -d)
 echo "$temp"
@@ -18,10 +18,22 @@ fetchGithubAvatar() {
 }
 
 fetchAvatar() {
-	./fetchSlackAvatar.sh $slackAvatarUrl > $temp/avatar.jpg
+	if [ "$option" == "slack" ]; then
+		local slackAvatarUrl="$2"
+
+		./fetchSlackAvatar.sh $slackAvatarUrl > $temp/avatar.jpg
+	elif [ "$option" == "file" ]; then
+		local filePath="$2"
+
+		cp $filePath $temp/avatar.jpg
+	else
+		local url="$2"
+
+		curl $url > $temp/avatar.jpg
+	fi
 }
 
-fetchAvatar &
+fetchAvatar "$@" &
 mkdir $temp/frames
 splitGif "$temp/frames" &
 
@@ -64,5 +76,5 @@ done
 
 wait
 
-gm convert -delay 10 -loop 0 -depth 4 -resize '300x200>'  $temp/frames_out/*.gif $temp/animation.gif
+gm convert -delay 10 -loop 0 -depth 4 -resize '400x300>'  $temp/frames_out/*.gif $temp/animation.gif
 gifsicle -O3 --colors 256 < $temp/animation.gif > $temp/better.gif

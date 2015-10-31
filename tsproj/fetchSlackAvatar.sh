@@ -2,6 +2,8 @@
 
 url="$1"
 
+echo "url: $url" >&2
+
 firstTry=$(curl $url)
 
 if [ "$firstTry" == "" ]; then

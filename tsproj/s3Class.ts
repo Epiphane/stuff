@@ -13,6 +13,8 @@ class s3Srvc {
    public uploadFile(path:string, key:string) {
       return new Promise((resolve, reject) => {
          fs.readFile(path, (err, data) => {
+
+             console.log('data (uploadFile)', data);
             if (err) {
                reject(err);
             }
