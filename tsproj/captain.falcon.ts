@@ -98,7 +98,7 @@ let falconPunch = function(opts: any, channel: any, name: string): void {
          console.log('path', path);
          console.log('key', key);
 
-         s3.uploadFile(path, key).then((data) => {
+         s3.uploadGif(path, key).then((data) => {
             console.log('data', data);
             let message = {
                text: 'Falcon... punch!',

@@ -10,7 +10,7 @@ class s3Srvc {
    constructor() {
       this.s3 = new AWS.S3();
    }
-   public uploadFile(path:string, key:string) {
+   public uploadGif(path:string, key:string) {
       return new Promise((resolve, reject) => {
          fs.readFile(path, (err, data) => {
 
@@ -22,7 +22,8 @@ class s3Srvc {
             let params = {
                 Bucket: this.GIF_BUCKET,
                 Key: key,
-                Body: new Buffer(data, 'binary')
+                Body: new Buffer(data, 'binary'),
+                ContentType: 'image/gif'
             }
 
             this.s3.putObject(params, (err, data) => {
