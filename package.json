@@ -24,7 +24,6 @@
     "http": "0.0.0",
     "https": "^1.0.0",
     "moment": "^2.10.6",
-    "octokat": "^0.4.12",
     "slack-client": "^1.4.1",
     "typescript": "^1.6.2",
     "url": "^0.11.0",

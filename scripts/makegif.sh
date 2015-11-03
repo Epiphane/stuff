@@ -21,7 +21,7 @@ fetchAvatar() {
 	if [ "$option" == "slack" ]; then
 		local slackAvatarUrl="$2"
 
-		./fetchSlackAvatar.sh $slackAvatarUrl > $temp/avatar.jpg
+		./scripts/fetchSlackAvatar.sh $slackAvatarUrl > $temp/avatar.jpg
 	elif [ "$option" == "file" ]; then
 		local filePath="$2"
 

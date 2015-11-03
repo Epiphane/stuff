@@ -1,6 +1,9 @@
+declare var require: (moduleId: string) => any;
+declare var process: any;
+
 var url = require('url');
 
-var args = process.argv.slice(2);
+var args: Array<string> = process.argv.slice(2);
 
 if (args.length < 2) {
 	console.error('usage: node ./parseUrlParam.js url param');

@@ -1,4 +1,4 @@
-declare function require(name:string);
+declare var require: (name:string) => any;
 declare var module;
 declare var Promise;
 

@@ -1,4 +1,3 @@
-
 declare var require: (moduleId: string) => any;
 declare var process: any;
 declare var Promise: any;
@@ -73,11 +72,11 @@ function copyFile(source, target) {
 let falconPunch = function(opts: any, channel: any, name: string): void {
    let execCmd;
    if (opts.slackUrl) {
-      execCmd = `./makegif.sh slack '${opts.slackUrl}'`;
+      execCmd = `./scripts/makegif.sh slack '${opts.slackUrl}'`;
    } else if (opts.localFile) {
-      execCmd = `./makegif.sh file '${opts.localFile}'`;
+      execCmd = `./scripts/makegif.sh file '${opts.localFile}'`;
    } else if (opts.url) {
-      execCmd = `./makegif.sh url '${opts.url}'`;
+      execCmd = `./scripts/makegif.sh url '${opts.url}'`;
    }
 
    console.log('execCmd', execCmd);
@@ -121,7 +120,7 @@ let falconPunch = function(opts: any, channel: any, name: string): void {
    });
 }
 
-var movebook = JSON.parse(fs.readFileSync('../ignoreme/.movebook', 'utf8'));
+var movebook = JSON.parse(fs.readFileSync('./ignoreme/.movebook', 'utf8'));
 
 var slackToken = movebook.token;
 var slack = new Slack(slackToken, true, true);
