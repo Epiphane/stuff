@@ -69,114 +69,117 @@ function copyFile(source, target) {
    });
 }
 
-let falconPunch = function(opts: any, channel: any, name: string): void {
-   let execCmd;
-   if (opts.slackUrl) {
-      execCmd = `./scripts/makegif.sh slack '${opts.slackUrl}'`;
-   } else if (opts.localFile) {
-      execCmd = `./scripts/makegif.sh file '${opts.localFile}'`;
-   } else if (opts.url) {
-      execCmd = `./scripts/makegif.sh url '${opts.url}'`;
+var captainFalcon = function(slackToken) {
+   var slack = new Slack(slackToken, true, true);
+
+   let falconPunch = function(opts: any, channel: any, name: string): void {
+       let execCmd;
+       if (opts.slackUrl) {
+           execCmd = `./scripts/makegif.sh slack '${opts.slackUrl}'`;
+       } else if (opts.localFile) {
+           execCmd = `./scripts/makegif.sh file '${opts.localFile}'`;
+       } else if (opts.url) {
+           execCmd = `./scripts/makegif.sh url '${opts.url}'`;
+       }
+
+       console.log('execCmd', execCmd);
+
+       exec(execCmd, (error, stdout, stderr) => {
+           console.log('stdout', stdout);
+           console.log('stderr', stderr);
+           if (error != null) {
+               console.log('exec error:', error);
+           } else {
+               let temp = stdout.trim();
+               let path = `${temp}/better.gif`;
+               let bucket = s3.GIF_BUCKET;
+               let key = `${slack.team.id}_${name}.gif`;
+               let url = `https://s3-us-west-2.amazonaws.com/${bucket}/${key}`;
+               console.log('url', url);
+
+               console.log('path', path);
+               console.log('key', key);
+
+               s3.uploadGif(path, key).then((data) => {
+                   console.log('data', data);
+                   let message = {
+                       text: 'Falcon... punch!',
+                       attachments: [
+                           {
+                               "fallback": "this is a fallback",
+                               "pretext": "this is pretext",
+                               "title": "this is the title",
+                               "image_url": url,
+                               "text": "this is the text",
+                               "color": "#FF0000"
+                           }
+                       ]
+                   };
+                   channel.postMessage(message);
+               }, (err) => {
+                   console.log('upload file died', err);
+               });
+           }
+       });
    }
 
-   console.log('execCmd', execCmd);
+   var s3 = new s3Class();
+   var emojiMachine = new emojiClass();
 
-   exec(execCmd, (error, stdout, stderr) => {
-      console.log('stdout', stdout);
-      console.log('stderr', stderr);
-      if (error != null) {
-         console.log('exec error:', error);
-      } else {
-         let temp = stdout.trim();
-         let path = `${temp}/better.gif`;
-         let bucket = s3.GIF_BUCKET;
-         let key = `${slack.team.id}_${name}.gif`;
-         let url = `https://s3-us-west-2.amazonaws.com/${bucket}/${key}`;
-         console.log('url', url);
-
-         console.log('path', path);
-         console.log('key', key);
-
-         s3.uploadGif(path, key).then((data) => {
-            console.log('data', data);
-            let message = {
-               text: 'Falcon... punch!',
-               attachments: [
-                  {
-                     "fallback": "this is a fallback",
-                     "pretext": "this is pretext",
-                     "title": "this is the title",
-                     "image_url": url,
-                     "text": "this is the text",
-                     "color": "#FF0000"
-                  }
-               ]
-            };
-            channel.postMessage(message);
-         }, (err) => {
-            console.log('upload file died', err);
-         });
-      }
+   slack.on('open', function() {
+     console.log('connected to ' + slack.team.name + ' as @' + slack.self.name);
+     emojiMachine.addCustomEmojis(slack);
    });
+
+   var participants: Array<string> = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
+
+   slack.on('message', function(message) {
+     var body = message.getBody();
+     var channel = slack.getChannelGroupOrDMByID(message.channel);
+     if (body.match('<@' + slack.self.id + '>:*.*contest.*')) {
+         scrapeContestData(participants).then(function(data) {
+             channel.send(formatContestData(data));
+         }, function onError(reason) {
+             channel.send('fail whale...');
+             channel.send(reason);
+         });
+     } else if (body.match('<@' + slack.self.id + '>:*.*help.*')) {
+         var strs = [
+             'Here are my commands:',
+             '   contest – get update on commit streak',
+             'commands comming soon:',
+             '  punch, kick, knee, show moves'
+         ];
+         channel.send(strs.join('\n'));
+     } else if (body.match('<@' + slack.self.id + '.*>:*.*punch.*')) {
+         slackMsgSrvc.findMentions(body).forEach((user) => {
+             user = 'U' + user;
+             if (user !== slack.self.id) {
+                 let picUrl = slack.users[user] && slack.users[user].profile.image_32;
+                 let opts = { slackUrl: picUrl };
+                 falconPunch(opts, channel, user);
+             }
+         });
+
+         slackMsgSrvc.findEmojis(body).forEach((emoji) => {
+             let stuff = emojiMachine.lookup[emoji];
+             let opts;
+             if (stuff.type === 'url') {
+                 opts = { url: stuff.data };
+             } else {
+                 opts = { localFile: emojiMachine.getFilePath(emoji) };
+             }
+             falconPunch(opts, channel, emoji);
+         });
+     } else {
+         console.log(message);
+     }
+   });
+
+   slack.login();
 }
 
 var movebook = JSON.parse(fs.readFileSync('./ignoreme/.movebook', 'utf8'));
-
-var slackToken = movebook.token;
-var slack = new Slack(slackToken, true, true);
-
-var s3 = new s3Class();
-var emojiMachine = new emojiClass();
-
-slack.on('open', function() {
-   console.log('connected to ' + slack.team.name + ' as @' + slack.self.name);
-   emojiMachine.addCustomEmojis(slack);
-});
-
-var participants: Array<string> = ['zarend', 'kyle-piddington', 'lejonmcgowan'];
-
-slack.on('message', function(message) {
-   var body = message.getBody();
-   var channel = slack.getChannelGroupOrDMByID(message.channel);
-   if (body.match('<@' + slack.self.id + '>:*.*contest.*')) {
-      scrapeContestData(participants).then(function(data) {
-         channel.send(formatContestData(data));
-      }, function onError(reason) {
-         channel.send('fail whale...');
-         channel.send(reason);
-      });
-   } else if (body.match('<@' + slack.self.id + '>:*.*help.*')) {
-      var strs = [
-         'Here are my commands:',
-         '   contest – get update on commit streak',
-         'commands comming soon:',
-         '  punch, kick, knee, show moves'
-      ];
-      channel.send(strs.join('\n'));
-   } else if (body.match('<@' + slack.self.id + '.*>:*.*punch.*')) {
-      slackMsgSrvc.findMentions(body).forEach((user) => {
-         user = 'U' + user;
-         if (user !== slack.self.id) {
-            let picUrl = slack.users[user] && slack.users[user].profile.image_32;
-            let opts = { slackUrl: picUrl};
-            falconPunch(opts, channel, user);
-         }
-      });
-
-      slackMsgSrvc.findEmojis(body).forEach((emoji) => {
-         let stuff = emojiMachine.lookup[emoji];
-         let opts;
-         if (stuff.type === 'url') {
-            opts = { url: stuff.data };
-         } else {
-            opts = { localFile: emojiMachine.getFilePath(emoji) };
-         }
-         falconPunch(opts, channel, emoji);
-      });
-   } else {
-      console.log(message);
-   }
-});
-
-slack.login();
-
+movebook.moves.forEach((nextMove) => {
+   captainFalcon(nextMove);
+})
