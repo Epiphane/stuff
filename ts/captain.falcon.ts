@@ -179,7 +179,4 @@ var captainFalcon = function(slackToken) {
    slack.login();
 }
 
-var movebook = JSON.parse(fs.readFileSync('./ignoreme/.movebook', 'utf8'));
-movebook.moves.forEach((nextMove) => {
-   captainFalcon(nextMove);
-})
+captainFalcon(args[0]);
