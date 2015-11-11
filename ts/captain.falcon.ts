@@ -15,6 +15,11 @@ var emojiClass: any = require('./emojiClass.js');
 
 var args:Array<string> = process.argv.slice(2);
 
+if (args.length <= 1) {
+  console.log('usage: node ts/captain.falcon.js token');
+  process.exit(1);
+}
+
 let scrapeContestData = function(participants:Array<string>) {
    let contestData = {};
 
